@@ -1,0 +1,71 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+pd.set_option('display.max_columns', None) # 显示所有列
+
+# 导入数据
+filename = 'cs-trainingV1.csv'
+dataset = pd.read_csv(filename, index_col=u'id') # index_col指明列索引，则id这一列不属于dataset的数值
+c_index = dataset.columns
+print("Dataset column labels: \n{}".format(dataset.columns))
+
+# 查看数据维度和类型
+print("\nDataset Shape: {}".format(dataset.shape))
+print("\nType of data: \n{}".format(dataset.dtypes))
+
+# 列名重命名
+names = {'SeriousDlqin2yrs':'target', 
+		'RevolvingUtilizationOfUnsecuredLines':'unsecuredRatio', 
+		'NumberOfTime30-59DaysPastDueNotWorse':'30to59Late', 
+		'DebtRatio':'debtRatio', 'MonthlyIncome':'income', 
+		'NumberOfOpenCreditLinesAndLoans':'nCredit', 
+		'NumberOfTimes90DaysLate':'90Late', 
+		'NumberRealEstateLoansOrLines':'nRealLoan', 
+		'NumberOfTime60-89DaysPastDueNotWorse':'60to89Late', 
+		'NumberOfDependents':'nDepend'}
+dataset.rename(columns=names, inplace=True)
+
+# 查看数据的前条
+print("\nFirst 5 rows of data: \n{}".format(dataset.head(5)))
+
+# 查看每一列的数目（缺失值情况）
+print("\ncount of data: \n{}".format(dataset.count()))
+
+# Describe data, 同时观察异常值情况
+print("\nDescription of data: \n{}".format(dataset.describe()))
+
+# 查看数据相关性
+## 协方差矩阵
+print("\nCovariance Matrix: \n{}".format(dataset.corr(method = 'pearson')))
+## 相关矩阵图
+fig = plt.figure()
+ax = fig.add_subplot(111) # 若参数349：将画布分割成3行4列，图像画在从左到右从上到下的第9块
+cax = ax.matshow(dataset.corr(), vmin=-1, vmax=1, interpolation='none') # 设置color bar
+fig.colorbar(cax)
+ticks = np.arange(0,11,1)    # 11是列数
+ax.set_xticks(ticks)         # x刻度
+ax.set_yticks(ticks)         # y刻度
+ax.set_xticklabels(c_index) 
+ax.set_yticklabels(c_index)  
+plt.show()
+
+# 查看数据分布
+## 密度图
+dataset.plot(kind='density', subplots=True, layout=(3,4), sharex=False, fontsize=1)
+plt.show()
+## 箱型图
+dataset.plot(kind='box', subplots=True, layout=(3,4), sharex=False, sharey=False, fontsize=8)
+plt.show()
+
+## Scatter Diagram
+###pd.plotting.scatter_matrix(dataset) # 这个太疯狂了，要花很久，两两画
+###plt.show()
+dataset.plot.scatter(x='age',y='income') # 单独画两个属性
+plt.show()
+
+## 直方图（根据需要）
+df.hist('target')
+df.hist('age')
+df.hist('debtRatio',bins=100)
+df.hist('income',bins=100)
+plt.show()
