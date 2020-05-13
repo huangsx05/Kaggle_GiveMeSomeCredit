@@ -1,0 +1,112 @@
+# 可视化函数代码
+def cluster_plot(data, d, k):
+    import matplotlib.pyplot as plt
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.rcParams['axes.unicode_minus'] = False
+
+    plt.figure(figsize=(12, 4))
+    for j in range(0, k):
+        plt.plot(data[d == j], [j for i in d[d == j]], 'o', alpha=0.3) #alpha控制透明度
+
+    plt.ylim(-0.5, k - 0.5)
+    return plt
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+pd.set_option('display.max_columns', None) # 显示所有列
+
+# 导入数据
+filename = 'cs-trainingV1.csv'
+dataset = pd.read_csv(filename, index_col=u'id') # index_col指明列索引，则id这一列不属于dataset的数值
+c_index = dataset.columns
+
+# 列名重命名
+names = {'SeriousDlqin2yrs':'target', 
+		'RevolvingUtilizationOfUnsecuredLines':'unsecuredRatio', 
+		'NumberOfTime30-59DaysPastDueNotWorse':'30to59Late', 
+		'DebtRatio':'debtRatio', 'MonthlyIncome':'income', 
+		'NumberOfOpenCreditLinesAndLoans':'nCredit', 
+		'NumberOfTimes90DaysLate':'90Late', 
+		'NumberRealEstateLoansOrLines':'nRealLoan', 
+		'NumberOfTime60-89DaysPastDueNotWorse':'60to89Late', 
+		'NumberOfDependents':'nDepend'}
+dataset.rename(columns=names, inplace=True)
+
+## 缺失值处理
+# 删除缺失数据的样本
+print('\n处理缺失值前: {}'.format(dataset.shape))
+dataset = dataset.dropna(subset=['income', 'nDepend'], how='any')
+print('\n处理缺失值后: {}'.format(dataset.shape))
+# 确认没有缺失值（non-null)
+dataset.info()
+
+# 数据类型转换
+dataset['nDepend'] = dataset['nDepend'].astype('int64')
+dataset.info()
+
+## 异常值处理
+# 删掉age=0的一行
+pop = dataset.loc[:,'age'] > 0
+dataset = dataset.loc[pop,:]
+#print('Dataset description: \n{}'.format(dataset.describe())) # min_age变成21
+
+## 连续值离散化 - age （等宽离散化）
+# 方法1
+k = 6
+bins = [0, 40, 60, 80, 100, 120]  # 自定义区间
+temp = pd.cut(dataset['age'], bins=bins, labels=range(k-1))
+cluster_plot(dataset['age'], temp, k).show()
+dataset['age'] = temp
+
+'''
+# 方法2
+dataset.loc[dataset['age'] <= 40, 'age'] = 0
+dataset.loc[(dataset['age'] > 40) & (dataset['age'] <= 60), 'age'] = 1
+dataset.loc[(dataset['age'] > 60) & (dataset['age'] <= 80), 'age'] = 2
+dataset.loc[(dataset['age'] > 80) & (dataset['age'] <= 100), 'age'] = 3
+dataset.loc[dataset['age'] > 100, 'age'] = 4
+
+# 方法3
+k = 5 # 分为5个等宽区间
+# 等宽离散
+temp = pd.cut(dataset['age'], k, labels=range(k))
+cluster_plot(dataset['age'], temp, k).show() # 查看划分结果
+dataset['age'] = temp # 将划分结果赋予
+'''
+dataset['age'] = dataset['age'].astype('int64') #否则无法describe
+
+## 连续值离散化 - nDepend （等宽离散化）
+k = 6
+bins = [0, 2, 4, 6, 8, 30]  # 自定义区间
+temp = pd.cut(dataset['nDepend'], bins=bins, labels=range(k-1))
+cluster_plot(dataset['nDepend'], temp, k).show()
+dataset['nDepend'] = temp
+
+## 连续值离散化 - income (等频离散化)
+k = 6
+# 等频率离散化
+w = [1.0 * i / k for i in range(k + 1)]
+w = dataset['income'].describe(percentiles=w)[4:4 + k + 1]
+w[0] = w[0] * (1 - 1e-10)
+temp = pd.cut(dataset['income'], w, labels=range(k))
+cluster_plot(dataset['income'], temp, k).show()
+dataset['income'] = temp
+dataset['income'] = dataset['income'].astype('float64') #否则无法describe
+
+## 连续值离散化 - debtRatio (等频离散化)
+k = 6
+# 等频率离散化
+w = [1.0 * i / k for i in range(k + 1)]
+w = dataset['debtRatio'].describe(percentiles=w)[4:4 + k + 1]
+w[0] = w[0] * (1 - 1e-10)
+temp = pd.cut(dataset['debtRatio'], w, labels=range(k))
+cluster_plot(dataset['debtRatio'], temp, k).show()
+dataset['debtRatio'] = temp
+dataset['debtRatio'] = dataset['debtRatio'].astype('float64') #否则无法describe
+
+
+
+print(dataset.head(5))
+print(dataset.describe())
+print(dataset.dtypes)
